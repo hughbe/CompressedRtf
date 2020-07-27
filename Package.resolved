@@ -1,0 +1,16 @@
+{
+  "object": {
+    "pins": [
+      {
+        "package": "DataStream",
+        "repositoryURL": "https://github.com/hughbe/DataStream",
+        "state": {
+          "branch": null,
+          "revision": "1b076b9f69cac5340157e757abb17bc4a7978734",
+          "version": "1.0.0"
+        }
+      }
+    ]
+  },
+  "version": 1
+}
