@@ -16,10 +16,10 @@ internal struct CompressedRtfHeader {
             throw RtfDecompressorError.invalidSize(size: UInt32(data.count))
         }
 
-        compSize = try data.readUInt32()
-        rawSize = try data.readUInt32()
-        let compTypeRaw = try data.readUInt32()
-        crc = try data.readUInt32()
+        compSize = try data.read(endianess: .littleEndian)
+        rawSize = try data.read(endianess: .littleEndian)
+        let compTypeRaw = try data.read(endianess: .littleEndian) as UInt32
+        crc = try data.read(endianess: .littleEndian)
 
         guard let compType = CompressedRtfType(rawValue: compTypeRaw) else {
             throw RtfDecompressorError.invalidCompType(compType: compTypeRaw)

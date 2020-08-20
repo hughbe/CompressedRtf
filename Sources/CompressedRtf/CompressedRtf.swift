@@ -83,7 +83,7 @@ public struct CompressedRtf {
 
             let sizeToUse = data.count//max(data.count, Int(header.compSize))
             while dataStream.position < sizeToUse {
-                guard let controlByte = try? dataStream.readUInt8() else {
+                guard let controlByte = try? dataStream.read() as UInt8 else {
                     // Not really in the spec, but match behaviour of WrapCompressedRTFStream
                     return result
                 }
@@ -94,7 +94,7 @@ public struct CompressedRtf {
                     // 2. Set the byte in the dictionary at the current write offset to the literal from step 1.
                     // 3. Increment the write offset and update the end offset, as appropriate, as specified in section 2.1.3.1.4.
                     if !controlByte.bit(at: j) {
-                        guard let value = try? dataStream.readUInt8() else {
+                        guard let value = try? dataStream.read() as UInt8 else {
                             // Not really in the spec, but match behaviour of WrapCompressedRTFStream
                             return result
                         }
@@ -105,7 +105,7 @@ public struct CompressedRtf {
                     } else {
                         // If the value of the bit is 1:
                         // 1. Read a 16-bit dictionary reference from the input in big-endian byte-order.
-                        guard let loWord = try? dataStream.readUInt8(), let hiWord = try? dataStream.readUInt8() else {
+                        guard let loWord = try? dataStream.read() as UInt8, let hiWord = try? dataStream.read() as UInt8 else {
                             // Not really in the spec, but match behaviour of WrapCompressedRTFStream
                             return result
                         }
