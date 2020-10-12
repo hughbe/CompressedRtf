@@ -1,9 +1,8 @@
 //
 //  CompressedRtfHeader.swift
-//  CompressedRtf
 //
-//  Created by Hugh Bellamy on 26/07/2020.
-//  Copyright © 2020 Hugh Bellamy. All rights reserved.
+//
+//  Created by Hugh Bellamy on 12/10/2020.
 //
 
 import DataStream
@@ -16,18 +15,19 @@ internal struct CompressedRtfHeader {
             throw RtfDecompressorError.invalidSize(size: UInt32(data.count))
         }
 
-        compSize = try data.read(endianess: .littleEndian)
-        rawSize = try data.read(endianess: .littleEndian)
-        let compTypeRaw = try data.read(endianess: .littleEndian) as UInt32
-        crc = try data.read(endianess: .littleEndian)
+        self.compSize = try data.read(endianess: .littleEndian)
+        self.rawSize = try data.read(endianess: .littleEndian)
 
+        let compTypeRaw = try data.read(endianess: .littleEndian) as UInt32
         guard let compType = CompressedRtfType(rawValue: compTypeRaw) else {
             throw RtfDecompressorError.invalidCompType(compType: compTypeRaw)
         }
         self.compType = compType
 
-        if compSize < 0x0C || (compType == .compressed && compSize < 0x10) {
-            throw RtfDecompressorError.invalidSize(size: compSize)
+        self.crc = try data.read(endianess: .littleEndian)
+
+        if self.compSize < 0x0C || (compType == .compressed && self.compSize < 0x10) {
+            throw RtfDecompressorError.invalidSize(size: self.compSize)
         }
     }
     
@@ -35,13 +35,4 @@ internal struct CompressedRtfHeader {
     public let rawSize: UInt32
     public let compType: CompressedRtfType
     public let crc: UInt32
-    
-    func dump() {
-        print("-- CompressedRtfHeader ---")
-        print("Comp Size: \(compSize.hexString)")
-        print("Raw Size: \(rawSize.hexString)")
-        print("Comp Type: \(compType)")
-        print("Crc: \(crc.hexString)")
-    }
 }
-

@@ -1,20 +1,12 @@
 //
-//  RtfDecompressor.swift
-//  CompressedRtf
+//  CompressedRtf.swift
 //
-//  Created by Hugh Bellamy on 21/07/2020.
-//  Copyright © 2020 Hugh Bellamy. All rights reserved.
+//
+//  Created by Hugh Bellamy on 12/10/2020.
 //
 
 import DataStream
 import Foundation
-
-public enum RtfDecompressorError: Error {
-    case invalidSize(size: UInt32)
-    case invalidCompType(compType: UInt32)
-    case invalidDictionaryReference
-    case corrupted
-}
 
 fileprivate extension BinaryInteger {
   func bit(at index: Int) -> Bool {
@@ -25,8 +17,9 @@ fileprivate extension BinaryInteger {
 public struct CompressedRtf {
     private static let circularDictionaryMaxLength = 0x1000
     private static var initialDictionary: [UInt8] = {
-        // 2.1.2.1 Dictionary
-        // The writer MUST initialize the dictionary (starting at offset 0) with the following ASCII string:
+        /// [MS-OXRTFCP] 2.1.2 Initialization
+        /// [MS-OXRTFCP] 2.1.2.1 Dictionary
+        /// The writer MUST initialize the dictionary (starting at offset 0) with the following ASCII string:
         var s = ""
         s += #"{\rtf1\ansi\mac\deff0\deftab720{\fonttbl;}"#
         s += #"{\f0\fnil \froman \fswiss \fmodern \fscript "#
@@ -52,28 +45,34 @@ public struct CompressedRtf {
     public static func decompressBytes(data: Data) throws -> [UInt8] {
         var dataStream = DataStream(data: data)
         let header = try CompressedRtfHeader(data: &dataStream)
+        /// [MS-OXRTFCP] 2.2.3 Processing Rules
+        /// If the decompression process, as defined in section 2.2, terminates prior to the end of the input, then
+        /// the remainder of the input (the PADDING field, as specified in section 2.1.3.1.1,) MUST be included
+        /// in the value of the CRC field, as specified in section 2.1.3.1.1. After this is done, if the computed value
+        /// of the CRC field does not equal that which is specified in the CRC field of the header, then the reader
+        /// MUST treat the input as corrupt.
         switch header.compType {
         case .uncompressed:
-            // 2.2.3.1 Decompressing Input of COMPTYPE UNCOMPRESSED
-            // When the COMPTYPE field is set to UNCOMPRESSED, the reader SHOULD read all bytes until the end
-            // of the stream is reached, regardless of the value of the RAWSIZE field. Or, the reader MAY read the
-            // number of bytes specified by the RAWSIZE field from the input (the Header field) and write them to
-            // the output. The COMPTYPE, RAWSIZE and Header fields are specified in section 2.1.3.1.1.
-            // The reader MUST NOT validate the value of the CRC field.
+            /// [MS-OXRTFCP] 2.2.3.1 Decompressing Input of COMPTYPE UNCOMPRESSED
+            /// When the COMPTYPE field is set to UNCOMPRESSED, the reader SHOULD read all bytes until the end
+            /// of the stream is reached, regardless of the value of the RAWSIZE field. Or, the reader MAY read the
+            /// number of bytes specified by the RAWSIZE field from the input (the Header field) and write them to
+            /// the output. The COMPTYPE, RAWSIZE and Header fields are specified in section 2.1.3.1.1.
+            /// The reader MUST NOT validate the value of the CRC field.
             return try dataStream.readBytes(count: dataStream.remainingCount)
         case .compressed:
-            // 2.2.3.2 Decompressing Input of COMPTYPE COMPRESSED
-            // If at any point during the steps specified in this section, the end of the input is reached before the
-            // termination of decompression, then the reader MUST treat the input as corrupt.
-            // When the COMPTYPE field is set to COMPRESSED, the decompression process is a straightforward
-            // loop, as follows:
-            // - Read the CONTROL field, as specified in section 2.1.3.1.1, from the input.
-            // - Starting with the  lowest bit (the 0x01 bit) in the CONTROL field, test each bit and carry out the
-            // actions as follows.
-            // - After all bits in the CONTROL field have been tested, read another value of a CONTROL field
-            // from the input and repeat the bit-testing process.
-            // For each bit, the reader MUST evaluate its value and complete the corresponding steps as specified in
-            // this section.
+            /// [MS-OXRTFCP] 2.2.3.2 Decompressing Input of COMPTYPE COMPRESSED
+            /// If at any point during the steps specified in this section, the end of the input is reached before the
+            /// termination of decompression, then the reader MUST treat the input as corrupt.
+            /// When the COMPTYPE field is set to COMPRESSED, the decompression process is a straightforward
+            /// loop, as follows:
+            /// - Read the CONTROL field, as specified in section 2.1.3.1.1, from the input.
+            /// - Starting with the  lowest bit (the 0x01 bit) in the CONTROL field, test each bit and carry out the
+            /// actions as follows.
+            /// - After all bits in the CONTROL field have been tested, read another value of a CONTROL field
+            /// from the input and repeat the bit-testing process.
+            /// For each bit, the reader MUST evaluate its value and complete the corresponding steps as specified in
+            /// this section.
             var dictionary = [UInt8](repeating: 0, count: circularDictionaryMaxLength)
             let initialLength = initialDictionary.count
             dictionary.replaceSubrange(0..<initialLength, with: initialDictionary)

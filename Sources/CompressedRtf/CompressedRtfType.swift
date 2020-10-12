@@ -1,9 +1,8 @@
 //
 //  CompressedRtfType.swift
-//  CompressedRtf
 //
-//  Created by Hugh Bellamy on 26/07/2020.
-//  Copyright © 2020 Hugh Bellamy. All rights reserved.
+//
+//  Created by Hugh Bellamy on 12/10/2020.
 //
 
 internal enum CompressedRtfType : UInt32 {
