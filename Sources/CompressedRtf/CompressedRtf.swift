@@ -7,12 +7,7 @@
 
 import DataStream
 import Foundation
-
-fileprivate extension BinaryInteger {
-  func bit(at index: Int) -> Bool {
-    return (self >> index) & 1 == 1
-  }
-}
+import BitField
 
 public struct CompressedRtf {
     private static let circularDictionaryMaxLength = 0x1000
@@ -43,8 +38,9 @@ public struct CompressedRtf {
     }
     
     public static func decompressBytes(data: Data) throws -> [UInt8] {
-        var dataStream = DataStream(data: data)
+        var dataStream = DataStream(data)
         let header = try CompressedRtfHeader(data: &dataStream)
+
         /// [MS-OXRTFCP] 2.2.3 Processing Rules
         /// If the decompression process, as defined in section 2.2, terminates prior to the end of the input, then
         /// the remainder of the input (the PADDING field, as specified in section 2.1.3.1.1,) MUST be included
@@ -82,17 +78,17 @@ public struct CompressedRtf {
 
             let sizeToUse = data.count//max(data.count, Int(header.compSize))
             while dataStream.position < sizeToUse {
-                guard let controlByte = try? dataStream.read() as UInt8 else {
+                guard var controlByte = try? dataStream.readBits() as BitFieldReader<UInt8> else {
                     // Not really in the spec, but match behaviour of WrapCompressedRTFStream
                     return result
                 }
                 
-                for j in 0..<8 {
+                for _ in 0..<8 {
                     // If the value of the bit is zero:
                     // 1. Read a 1-byte literal from the input and write it to the output.
                     // 2. Set the byte in the dictionary at the current write offset to the literal from step 1.
                     // 3. Increment the write offset and update the end offset, as appropriate, as specified in section 2.1.3.1.4.
-                    if !controlByte.bit(at: j) {
+                    if !controlByte.readBit() {
                         guard let value = try? dataStream.read() as UInt8 else {
                             // Not really in the spec, but match behaviour of WrapCompressedRTFStream
                             return result
